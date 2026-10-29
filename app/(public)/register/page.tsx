@@ -8,7 +8,6 @@ export const metadata = {
 export default function RegisterPage() {
   return (
     <main className="register-scene relative isolate overflow-hidden px-4 py-6 text-[#172b22] sm:px-8 sm:py-10 lg:min-h-[calc(100vh-72px)] lg:py-12">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[url('/register-background.svg')] bg-cover bg-center opacity-[0.13]" />
       <div className="mx-auto grid max-w-7xl items-stretch gap-6 lg:grid-cols-[minmax(0,1.04fr)_minmax(440px,0.96fr)] lg:gap-8">
         <section className="register-visual relative flex min-h-[410px] flex-col justify-between overflow-hidden rounded-[2rem] p-7 text-white shadow-[0_30px_90px_-40px_rgba(6,35,25,0.6)] sm:min-h-[470px] sm:p-10 lg:min-h-[700px] lg:p-12">
           <div className="relative z-10 flex items-center gap-3">
@@ -16,7 +15,7 @@ export default function RegisterPage() {
               D
             </span>
             <span className="font-heading text-xl font-bold tracking-tight">
-              domi<span className="text-[#9fe2b5]">vexa</span>
+              Domi<span className="text-[#9fe2b5]">vexa</span>
             </span>
           </div>
 

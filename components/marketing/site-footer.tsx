@@ -39,7 +39,7 @@ export function SiteFooter() {
                 D
               </span>
               <span className="font-heading text-2xl font-bold">
-                domi<span className="text-[#7bd4a3]">vexa</span>
+                Domi<span className="text-[#7bd4a3]">vexa</span>
               </span>
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-7 text-[#b7c9bd]">

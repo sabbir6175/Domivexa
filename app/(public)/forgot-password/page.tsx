@@ -10,7 +10,6 @@ export const metadata = {
 export default function ForgotPasswordPage() {
   return (
     <main className="register-scene relative isolate flex min-h-[65vh] items-center overflow-hidden px-4 py-12 text-[#172b22] sm:px-8 sm:py-16">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[url('/register-background.svg')] bg-cover bg-center opacity-[0.13]" />
       <section className="register-glass-card relative mx-auto w-full max-w-xl overflow-hidden rounded-[2rem] p-6 sm:p-10">
         <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#c4e7ca]/40 blur-3xl" />
         <div className="relative">

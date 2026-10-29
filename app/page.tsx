@@ -108,10 +108,10 @@ export default function Home() {
 
           {/* Hero Dashboard Preview */}
           <div className="relative mx-auto w-full max-w-xl">
-            <div aria-hidden="true" className="absolute -right-5 top-6 h-28 w-28 rounded-[2rem] bg-[#cfe4d2] sm:-right-8" />
-            <div aria-hidden="true" className="absolute -bottom-5 -left-5 h-28 w-28 rounded-full border-[12px] border-[#deebdf]" />
+            <div aria-hidden="true" className="home-preview-orb absolute -right-5 top-6 h-28 w-28 rounded-[2rem] bg-[#cfe4d2] sm:-right-8" />
+            <div aria-hidden="true" className="home-preview-ring absolute -bottom-5 -left-5 h-28 w-28 rounded-full border-[12px] border-[#deebdf]" />
 
-            <div className="relative rounded-[2rem] border border-white/80 bg-white p-5 shadow-[0_28px_90px_-40px_rgba(20,65,39,0.38)] sm:p-7">
+            <div className="home-preview-card relative rounded-[2rem] border border-white/80 bg-white p-5 shadow-[0_28px_90px_-40px_rgba(20,65,39,0.38)] sm:p-7">
               <div className="flex items-center justify-between border-b border-[#edf1ed] pb-5">
                 <div>
                   <p className="font-bold tracking-tight">Your online home</p>
@@ -132,17 +132,17 @@ export default function Home() {
                     Ready when you are
                   </span>
                 </div>
-                <h2 className="mt-3 break-all text-2xl font-bold tracking-tight sm:text-3xl">
+                <h2 className="home-preview-domain mt-3 break-all text-2xl font-bold tracking-tight sm:text-3xl">
                   yourbrand<span className="text-[#218259]">.com</span>
                 </h2>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-[#edf1ed] bg-white p-4">
+                  <div className="home-preview-tile home-preview-tile--dns rounded-xl border border-[#edf1ed] bg-white p-4">
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#edf6ee] text-sm text-[#218259]"><MaterialIcon name="dns" /></span>
                     <p className="mt-3 text-xs text-gray-500">Manage DNS</p>
                     <p className="mt-1 text-sm font-semibold">All in one place</p>
                   </div>
-                  <div className="rounded-xl border border-[#edf1ed] bg-white p-4">
+                  <div className="home-preview-tile home-preview-tile--site rounded-xl border border-[#edf1ed] bg-white p-4">
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#edf6ee] text-sm text-[#218259]"><MaterialIcon name="open_in_new" /></span>
                     <p className="mt-3 text-xs text-gray-500">Connect a site</p>
                     <p className="mt-1 text-sm font-semibold">On your terms</p>
@@ -150,7 +150,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center gap-4 rounded-2xl border border-[#edf1ed] p-4">
+              <div className="home-preview-note mt-5 flex items-center gap-4 rounded-2xl border border-[#edf1ed] p-4">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eaf4eb] text-xl text-[#218259]">
                   <MaterialIcon name="auto_awesome" />
                 </span>
@@ -166,17 +166,31 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="border-y border-[#e9efe9] bg-white px-5 py-5 sm:px-8">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-10 gap-y-3 text-sm text-[#59685e] sm:justify-between">
-          <span className="font-semibold text-[#263a2d]">A simpler way to get online</span>
-          <span className="flex items-center gap-2"><MaterialIcon name="check_circle" className="text-[#25865e]" /> Find a name you love</span>
-          <span className="flex items-center gap-2"><MaterialIcon name="check_circle" className="text-[#25865e]" /> Manage it with ease</span>
-          <span className="flex items-center gap-2"><MaterialIcon name="check_circle" className="text-[#25865e]" /> Connect your website</span>
+      <div className="border-y border-[#e5ece5] bg-white/75 px-5 py-5 backdrop-blur-sm sm:px-8">
+        <div className="mx-auto grid max-w-7xl gap-3 text-sm text-[#59685e] sm:grid-cols-2 lg:grid-cols-4">
+          <span className="flex items-center gap-3 rounded-xl px-3 py-2 font-semibold text-[#263a2d]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eaf4eb] text-[#25865e]">
+              <MaterialIcon name="north_east" />
+            </span>
+            A simpler way to get online
+          </span>
+          <span className="flex items-center gap-3 rounded-xl px-3 py-2">
+            <MaterialIcon name="check_circle" className="text-xl text-[#25865e]" />
+            Find a name you love
+          </span>
+          <span className="flex items-center gap-3 rounded-xl px-3 py-2">
+            <MaterialIcon name="check_circle" className="text-xl text-[#25865e]" />
+            Manage it with ease
+          </span>
+          <span className="flex items-center gap-3 rounded-xl px-3 py-2">
+            <MaterialIcon name="check_circle" className="text-xl text-[#25865e]" />
+            Connect your website
+          </span>
         </div>
       </div>
 
       {/* Domain Extensions */}
-      <section id="domains" className="scroll-mt-24 px-5 py-20 sm:px-8 lg:py-24">
+      <section id="domains" className="scroll-mt-24 bg-[linear-gradient(180deg,rgba(248,251,246,0.82),rgba(255,255,255,0.4))] px-5 py-20 sm:px-8 lg:py-24">
         <div className="mx-auto max-w-7xl">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#25865e]">
             FIND YOUR NAME
@@ -205,22 +219,23 @@ export default function Home() {
             {extensions.map((item) => (
               <article
                 key={item.name}
-                className="group rounded-[1.5rem] border border-[#e7ece7] bg-white p-6 shadow-[0_8px_24px_-20px_rgba(23,65,41,0.3)] transition duration-200 hover:-translate-y-1 hover:border-[#b8d6c0] hover:shadow-[0_18px_38px_-20px_rgba(23,65,41,0.28)]"
+                className="group relative overflow-hidden rounded-[1.5rem] border border-[#e4ece4] bg-white/90 p-6 shadow-[0_12px_30px_-24px_rgba(23,65,41,0.34)] transition duration-300 hover:-translate-y-1.5 hover:border-[#b8d6c0] hover:shadow-[0_24px_48px_-28px_rgba(23,65,41,0.38)]"
               >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-3xl font-bold">{item.name}</h3>
-                  <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#edf5ed] text-lg text-[#218259] transition-colors group-hover:bg-[#176b4d] group-hover:text-white">
+                <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[#eaf4eb] opacity-70 transition duration-500 group-hover:scale-125 group-hover:opacity-100" />
+                <div className="relative flex items-center justify-between">
+                  <h3 className="font-heading text-3xl font-bold tracking-tight">{item.name}</h3>
+                  <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg text-[#218259] shadow-sm transition duration-200 group-hover:bg-[#176b4d] group-hover:text-white">
                     <MaterialIcon name="arrow_outward" />
                   </span>
                 </div>
 
-                <p className="mt-4 text-sm text-[#66736a]">
+                <p className="relative mt-4 text-sm text-[#66736a]">
                   A home for your next big idea.
                 </p>
 
-                <div className="mt-7 border-t border-[#edf1ed] pt-5">
-                  <p className="text-xs text-gray-500">Illustrative price</p>
-                  <p className="mt-1 text-2xl font-bold">
+                <div className="relative mt-7 border-t border-[#edf1ed] pt-5">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Illustrative price</p>
+                  <p className="mt-1 font-heading text-2xl font-bold tracking-tight">
                     {item.price}
                     <span className="text-sm font-normal text-gray-500">
                       /year
@@ -245,7 +260,9 @@ export default function Home() {
       </section>
 
       {/* Services */}
-      <section id="services" className="scroll-mt-24 bg-[#f3f7f2] px-5 py-20 sm:px-8 lg:py-24">
+      <section id="services" className="relative isolate scroll-mt-24 overflow-hidden bg-[#f1f6f0] px-5 py-20 sm:px-8 lg:py-24">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-40 top-0 -z-10 h-[26rem] w-[26rem] rounded-full border border-[#d8e8d9] opacity-70" />
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-48 -left-32 -z-10 h-[30rem] w-[30rem] rounded-full bg-[radial-gradient(circle,rgba(198,226,202,0.45),transparent_68%)]" />
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#25865e]">
@@ -264,25 +281,26 @@ export default function Home() {
             {services.map((service) => (
               <article
                 key={service.number}
-                className="rounded-[1.5rem] border border-[#e7ece7] bg-white p-7 shadow-[0_8px_24px_-20px_rgba(23,65,41,0.3)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_18px_38px_-20px_rgba(23,65,41,0.28)] sm:p-8"
+                className="group relative overflow-hidden rounded-[1.5rem] border border-white bg-white/90 p-7 shadow-[0_14px_36px_-28px_rgba(23,65,41,0.38)] transition duration-300 hover:-translate-y-1.5 hover:border-[#c8dfcc] hover:shadow-[0_26px_52px_-30px_rgba(23,65,41,0.42)] sm:p-8"
               >
-                <div className="flex items-center justify-between">
-                  <span aria-hidden="true" className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eaf4eb] text-3xl text-[#218259]">
+                <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-16 h-36 w-36 rounded-full bg-[#eff7ef] transition duration-500 group-hover:scale-125" />
+                <div className="relative flex items-center justify-between">
+                  <span aria-hidden="true" className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[linear-gradient(145deg,#edf7ed,#dcefe0)] text-3xl text-[#218259] shadow-[inset_0_1px_0_white] transition-transform duration-300 group-hover:scale-105">
                     <MaterialIcon name={service.icon} />
                   </span>
-                  <span className="text-sm font-semibold text-gray-400">
+                  <span className="font-heading text-sm font-bold tracking-[0.12em] text-[#a6b6a8]">
                     {service.number}
                   </span>
                 </div>
 
-                <h3 className="mt-7 text-xl font-bold">{service.title}</h3>
-                <p className="mt-3 leading-7 text-[#59685e]">
+                <h3 className="relative mt-7 font-heading text-xl font-bold tracking-tight">{service.title}</h3>
+                <p className="relative mt-3 leading-7 text-[#59685e]">
                   {service.description}
                 </p>
 
                 <a
                   href="#how-it-works"
-                  className="mt-6 inline-block font-semibold text-[#176b4d] transition hover:underline"
+                  className="relative mt-6 inline-flex items-center gap-1 font-semibold text-[#176b4d] transition group-hover:gap-2"
                 >
                   Learn more <MaterialIcon name="arrow_forward" className="align-middle text-base" />
                 </a>
@@ -310,7 +328,7 @@ export default function Home() {
               aims to make every step easier.
             </p>
 
-            <div className="mt-9 space-y-7">
+            <div className="relative mt-9 space-y-3 before:absolute before:bottom-8 before:left-[21px] before:top-8 before:w-px before:bg-gradient-to-b before:from-[#9fc9a8] before:via-[#d4e5d5] before:to-transparent">
               {[
                 {
                   number: "01",
@@ -328,12 +346,12 @@ export default function Home() {
                   text: "Configure DNS records or nameservers for your platform.",
                 },
               ].map((step) => (
-                <div key={step.number} className="flex gap-5">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eaf4eb] text-sm font-bold text-[#176b4d]">
+                <div key={step.number} className="group relative flex gap-4 rounded-2xl border border-transparent p-3 transition duration-200 hover:border-[#e6eee6] hover:bg-white/70 sm:gap-5 sm:p-4">
+                  <div className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#d8e9da] bg-white text-xs font-bold text-[#176b4d] shadow-sm transition duration-200 group-hover:border-[#176b4d] group-hover:bg-[#176b4d] group-hover:text-white">
                     {step.number}
                   </div>
-                  <div>
-                    <h3 className="font-bold">{step.title}</h3>
+                  <div className="pt-1">
+                    <h3 className="font-semibold text-[#263a2d]">{step.title}</h3>
                     <p className="mt-2 text-sm leading-6 text-[#59685e]">
                       {step.text}
                     </p>
@@ -345,8 +363,10 @@ export default function Home() {
 
           <div
             id="about"
-            className="scroll-mt-24 rounded-[2rem] bg-[#176b4d] p-8 text-white sm:p-12"
+            className="relative isolate scroll-mt-24 overflow-hidden rounded-[2rem] bg-[radial-gradient(ellipse_at_100%_0%,rgba(107,183,138,0.35),transparent_38%),linear-gradient(135deg,#176b4d,#124a37_58%,#103d30)] p-8 text-white shadow-[0_30px_75px_-38px_rgba(15,67,46,0.65)] sm:p-12"
           >
+            <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 -z-10 h-64 w-64 rounded-full border border-white/10" />
+            <div aria-hidden="true" className="pointer-events-none absolute -right-3 top-[-3.4rem] -z-10 h-40 w-40 rounded-full border border-white/10" />
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#bde5c9]">
               YOUR DIGITAL HOME
             </p>
@@ -361,15 +381,17 @@ export default function Home() {
             </p>
 
             <div className="mt-9 grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-white/15 bg-white/10 p-5">
-                <p className="text-2xl font-bold">Simple</p>
+              <div className="rounded-2xl border border-white/15 bg-white/[0.08] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-sm">
+                <MaterialIcon name="tune" className="text-2xl text-[#bde5c9]" />
+                <p className="mt-3 text-xl font-bold">Simple</p>
                 <p className="mt-2 text-sm text-[#d3e9da]">
                   Easy domain management
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/15 bg-white/10 p-5">
-                <p className="text-2xl font-bold">Flexible</p>
+              <div className="rounded-2xl border border-white/15 bg-white/[0.08] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-sm">
+                <MaterialIcon name="hub" className="text-2xl text-[#bde5c9]" />
+                <p className="mt-3 text-xl font-bold">Flexible</p>
                 <p className="mt-2 text-sm text-[#d3e9da]">
                   Connect your preferred platform
                 </p>
@@ -388,7 +410,9 @@ export default function Home() {
 
       {/* Final CTA */}
       <section className="px-5 pb-20 sm:px-8 lg:pb-24">
-        <div className="mx-auto max-w-7xl rounded-[2rem] border border-[#e8eee8] bg-[radial-gradient(ellipse_at_50%_0%,#e0efe2_0%,#f4f8f2_55%,#f4f8f2_100%)] px-6 py-14 text-center sm:px-12 sm:py-16">
+        <div className="relative isolate mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-[#dfeade] bg-[radial-gradient(ellipse_at_50%_0%,#e0efe2_0%,#f4f8f2_55%,#f4f8f2_100%)] px-6 py-14 text-center shadow-[0_22px_60px_-42px_rgba(23,65,41,0.35)] sm:px-12 sm:py-16">
+          <div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-20 -z-10 h-56 w-56 rounded-full border border-[#d1e4d3]/80" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 -right-12 -z-10 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(192,221,196,0.52),transparent_68%)]" />
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#25865e]">
             START YOUR JOURNEY
           </p>
@@ -403,7 +427,7 @@ export default function Home() {
 
           <Link
             href="/search"
-            className="mt-8 inline-flex rounded-xl bg-[#176b4d] px-7 py-4 font-semibold text-white shadow-sm transition hover:bg-[#10553c]"
+            className="glass-button mt-8 inline-flex items-center gap-2 rounded-xl px-7 py-4 font-semibold text-white"
           >
             Search Your Domain <MaterialIcon name="arrow_forward" className="align-middle text-base" />
           </Link>

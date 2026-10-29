@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-page-custom-font -- Material Symbols are shared through the App Router root layout. */
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import "./globals.css";
 
 const headingFont = Manrope({
@@ -37,7 +38,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           rel="stylesheet"
         />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

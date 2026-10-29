@@ -2,14 +2,10 @@
 
 import Link from "next/link";
 import { FirebaseError } from "firebase/app";
-import {
-  onAuthStateChanged,
-  signOut,
-  updateProfile,
-  type User,
-} from "firebase/auth";
+import { signOut, updateProfile, type User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { useAuth } from "@/components/auth/auth-provider";
 import { FirebaseConfigurationError, getFirebaseAuth } from "@/lib/firebase";
 
 const navigation = [
@@ -172,6 +168,12 @@ function Notice({
 
 export default function DashboardPage() {
   const router = useRouter();
+  const {
+    status: authStatus,
+    user: authUser,
+    error: authError,
+    refreshUser,
+  } = useAuth();
   const [state, setState] = useState<DashboardState>({ status: "loading" });
   const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
   const [signingOut, setSigningOut] = useState(false);
@@ -183,73 +185,65 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let active = true;
-    let unsubscribe: (() => void) | undefined;
+    if (authStatus === "loading") return;
 
-    void Promise.resolve()
-      .then(() => getFirebaseAuth())
-      .then((auth) => {
+    if (authStatus === "error") {
+      void Promise.resolve().then(() => {
+        if (active) setState({ status: "error", message: getDashboardError(authError) });
+      });
+      return;
+    }
+
+    if (authStatus === "signed-out") {
+      if (preserveAccessMessage.current) return;
+      void Promise.resolve().then(() => {
+        if (active) setState({ status: "signed-out" });
+      });
+      router.replace("/sign-in");
+      return;
+    }
+
+    const user = authUser;
+    if (!user) return;
+
+    async function verifyDashboardAccess() {
+      try {
+        preserveAccessMessage.current = false;
+        await user.reload();
+        const claims = await user.getIdTokenResult(true);
         if (!active) return;
 
-        unsubscribe = onAuthStateChanged(
-          auth,
-          async (user) => {
-            if (!active) return;
+        if (!user.emailVerified) {
+          const email = user.email ?? "";
+          preserveAccessMessage.current = true;
+          setState({ status: "unverified", email });
+          await signOut(getFirebaseAuth());
+          return;
+        }
 
-            if (!user) {
-              if (preserveAccessMessage.current) return;
-              setState({ status: "signed-out" });
-              router.replace("/sign-in");
-              return;
-            }
+        const role = claims.claims.role;
+        if (role !== undefined && role !== "customer") {
+          preserveAccessMessage.current = true;
+          setState({ status: "unsupported-role" });
+          await signOut(getFirebaseAuth());
+          return;
+        }
 
-            try {
-              preserveAccessMessage.current = false;
-              await user.reload();
-              const claims = await user.getIdTokenResult(true);
-              if (!active) return;
-
-              if (!user.emailVerified) {
-                const email = user.email ?? "";
-                preserveAccessMessage.current = true;
-                await signOut(auth);
-                if (active) setState({ status: "unverified", email });
-                return;
-              }
-
-              const role = claims.claims.role;
-              if (role !== undefined && role !== "customer") {
-                preserveAccessMessage.current = true;
-                await signOut(auth);
-                if (active) setState({ status: "unsupported-role" });
-                return;
-              }
-
-              setProfileName(user.displayName ?? "");
-              setState({ status: "ready", user });
-            } catch (error) {
-              if (active) {
-                setState({ status: "error", message: getDashboardError(error) });
-              }
-            }
-          },
-          (error) => {
-            if (active) {
-              setState({ status: "error", message: getDashboardError(error) });
-            }
-          },
-        );
-      })
-      .catch((error: unknown) => {
+        setProfileName(user.displayName ?? "");
+        setState({ status: "ready", user });
+      } catch (error) {
         if (active) {
           setState({ status: "error", message: getDashboardError(error) });
         }
-      });
+      }
+    }
+
+    void verifyDashboardAccess();
 
     return () => {
       active = false;
-      unsubscribe?.();
     };
-  }, [router]);
+  }, [authStatus, authError, authUser, router]);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -279,6 +273,7 @@ export default function DashboardPage() {
 
     try {
       await updateProfile(state.user, { displayName: trimmedName });
+      await refreshUser();
       setState({ status: "ready", user: state.user });
       setProfileMessage("Your display name has been updated.");
     } catch (error) {
@@ -290,7 +285,7 @@ export default function DashboardPage() {
 
   if (state.status !== "ready") {
     return (
-      <main className="flex min-h-[70vh] items-center justify-center bg-[#f6f8f6] px-5 py-12 text-[#26372b]">
+      <main className="flex min-h-[70vh] items-center justify-center bg-transparent px-5 py-12 text-[#26372b]">
         <section
           aria-live="polite"
           className="w-full max-w-lg rounded-3xl border border-[#e7ece8] bg-white p-7 text-center shadow-[0_24px_70px_-45px_rgba(23,65,41,0.35)] sm:p-10"
@@ -855,11 +850,11 @@ export default function DashboardPage() {
   }[activeSection];
 
   return (
-    <main className="min-h-screen bg-[#f5f8f5] text-[#26372b]">
+    <main className="min-h-screen bg-transparent text-[#26372b]">
       <header className="sticky top-0 z-30 flex h-[68px] items-center justify-between border-b border-[#e5ece6] bg-white/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2.5" aria-label="Domivexa home">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#176b4d] text-lg font-bold text-white">D</span>
-          <span className="font-heading text-xl font-bold tracking-tight">domi<span className="text-[#25865e]">vexa</span></span>
+          <span className="font-heading text-xl font-bold tracking-tight">Domi<span className="text-[#25865e]">vexa</span></span>
           <span className="ml-1 hidden h-6 border-l border-[#e6ece7] pl-3 text-xs font-medium text-[#89948c] sm:inline-flex sm:items-center">Customer workspace</span>
         </Link>
 
