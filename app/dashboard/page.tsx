@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { FirebaseError } from "firebase/app";
-import { signOut, updateProfile, type User } from "firebase/auth";
+import { updateProfile, type User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { FirebaseConfigurationError, getFirebaseAuth } from "@/lib/firebase";
+import {
+  createServerSession,
+  signOutAndClearSession,
+} from "@/lib/auth-session";
 
 const navigation = [
   { id: "overview", label: "Overview", icon: "grid_view" },
@@ -24,7 +28,7 @@ type DashboardState =
   | { status: "ready"; user: User }
   | { status: "signed-out" }
   | { status: "unverified"; email: string }
-  | { status: "unsupported-role" }
+  | { status: "admin-redirect" }
   | { status: "error"; message: string };
 
 function getDashboardError(error: unknown) {
@@ -52,8 +56,8 @@ function getDashboardStatusMessage(state: Exclude<DashboardState, { status: "rea
       return "Redirecting to sign in...";
     case "unverified":
       return `Verify ${state.email} before opening your dashboard. Sign in again after verifying your email.`;
-    case "unsupported-role":
-      return "This customer dashboard is not available for your assigned role.";
+    case "admin-redirect":
+      return "Opening your administrator dashboard...";
     case "error":
       return state.message;
   }
@@ -210,22 +214,24 @@ export default function DashboardPage() {
       try {
         preserveAccessMessage.current = false;
         await user.reload();
-        const claims = await user.getIdTokenResult(true);
+        const idToken = await user.getIdToken(true);
         if (!active) return;
 
         if (!user.emailVerified) {
           const email = user.email ?? "";
           preserveAccessMessage.current = true;
           setState({ status: "unverified", email });
-          await signOut(getFirebaseAuth());
+          await signOutAndClearSession(getFirebaseAuth());
           return;
         }
 
-        const role = claims.claims.role;
-        if (role !== undefined && role !== "customer") {
+        const session = await createServerSession(idToken);
+        if (!active) return;
+
+        if (session.isAdmin) {
           preserveAccessMessage.current = true;
-          setState({ status: "unsupported-role" });
-          await signOut(getFirebaseAuth());
+          setState({ status: "admin-redirect" });
+          router.replace("/admin");
           return;
         }
 
@@ -248,7 +254,7 @@ export default function DashboardPage() {
   async function handleSignOut() {
     setSigningOut(true);
     try {
-      await signOut(getFirebaseAuth());
+      await signOutAndClearSession(getFirebaseAuth());
       router.replace("/sign-in");
     } catch (error) {
       setState({ status: "error", message: getDashboardError(error) });
@@ -297,8 +303,8 @@ export default function DashboardPage() {
                   ? "progress_activity"
                   : state.status === "unverified"
                     ? "mark_email_unread"
-                    : state.status === "unsupported-role"
-                      ? "admin_panel_settings"
+                    : state.status === "admin-redirect"
+                      ? "progress_activity"
                       : "error"
               }
             />
@@ -306,8 +312,8 @@ export default function DashboardPage() {
           <h1 className="mt-5 font-heading text-2xl font-bold">
             {state.status === "unverified"
               ? "Verify your email"
-              : state.status === "unsupported-role"
-                ? "Role access unavailable"
+              : state.status === "admin-redirect"
+                ? "Admin dashboard"
                 : state.status === "error"
                   ? "Account unavailable"
                   : "Your dashboard"}
@@ -315,7 +321,7 @@ export default function DashboardPage() {
           <p className="mt-3 text-sm leading-7 text-[#68766d]">
             {getDashboardStatusMessage(state)}
           </p>
-          {state.status !== "loading" && state.status !== "signed-out" && (
+          {state.status !== "loading" && state.status !== "signed-out" && state.status !== "admin-redirect" && (
             <Link
               href="/sign-in"
               className="glass-button mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white"

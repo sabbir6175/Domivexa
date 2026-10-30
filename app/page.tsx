@@ -69,7 +69,7 @@ export default function Home() {
             <form
               action="/search"
               method="get"
-              className="mt-9 flex flex-col gap-2 rounded-[1.35rem] border border-[#e3ebe2] bg-white p-2.5 shadow-[0_16px_50px_-24px_rgba(23,65,41,0.28)] transition focus-within:border-[#91b99c] focus-within:ring-4 focus-within:ring-[#176b4d]/10 sm:flex-row sm:items-center"
+              className="mt-9 flex flex-col gap-2 rounded-[1.35rem] border border-[#e3ebe2] bg-white p-2.5 shadow-[0_16px_50px_-24px_rgba(23,65,41,0.28)] sm:flex-row sm:items-center"
             >
               <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
                 <MaterialIcon name="search" className="text-2xl text-[#7b8b7e]" />
@@ -80,7 +80,7 @@ export default function Home() {
                   aria-label="Enter your domain name"
                   autoComplete="url"
                   required
-                  className="min-w-0 flex-1 rounded-xl py-3.5 text-sm text-[#172b22] outline-none placeholder:text-gray-400 sm:text-base"
+                  className="home-search-input min-w-0 flex-1 rounded-xl py-3.5 text-sm text-[#172b22] placeholder:text-gray-400 sm:text-base"
                 />
               </label>
 

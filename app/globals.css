@@ -40,10 +40,6 @@ h3,
   font-family: var(--font-heading), Georgia, serif;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 .material-symbols-rounded {
   display: inline-flex;
   align-items: center;
@@ -116,6 +112,10 @@ html {
 
 .register-scene {
   background: transparent;
+}
+
+.home-search-input:focus-visible {
+  outline: none !important;
 }
 
 .home-preview-card {
@@ -435,7 +435,6 @@ button {
   *,
   *::before,
   *::after {
-    scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

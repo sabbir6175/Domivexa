@@ -9,8 +9,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { onAuthStateChanged, type User } from "firebase/auth";
+import { onIdTokenChanged, type User } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase";
+import {
+  clearServerSession,
+  establishServerSession,
+} from "@/lib/auth-session";
 
 type AuthState =
   | { status: "loading"; user: null; error: null }
@@ -33,6 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    let authEvent = 0;
+    let hadAuthenticatedUser = false;
     let unsubscribe: (() => void) | undefined;
 
     void Promise.resolve()
@@ -40,15 +46,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((auth) => {
         if (!active) return;
 
-        unsubscribe = onAuthStateChanged(
+        unsubscribe = onIdTokenChanged(
           auth,
-          (user) => {
-            if (!active) return;
-            setState(
-              user
-                ? { status: "authenticated", user, error: null }
-                : { status: "signed-out", user: null, error: null },
-            );
+          async (user) => {
+            const event = ++authEvent;
+            try {
+              if (user) {
+                hadAuthenticatedUser = true;
+                await establishServerSession(user);
+              } else if (hadAuthenticatedUser) {
+                await clearServerSession();
+                hadAuthenticatedUser = false;
+              }
+
+              if (!active || event !== authEvent) return;
+              setState(
+                user
+                  ? { status: "authenticated", user, error: null }
+                  : { status: "signed-out", user: null, error: null },
+              );
+            } catch (error) {
+              console.error("Could not synchronize Firebase authentication with the server session:", error);
+              if (!active || event !== authEvent) return;
+              setState({ status: "error", user: null, error });
+            }
           },
           (error) => {
             if (!active) return;
@@ -72,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     if (state.status !== "authenticated") return;
     await state.user.reload();
+    await establishServerSession(state.user);
     setState({ status: "authenticated", user: state.user, error: null });
   }, [state]);
 

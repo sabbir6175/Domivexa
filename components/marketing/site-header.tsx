@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { signOut } from "firebase/auth";
+import { signOutAndClearSession } from "@/lib/auth-session";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { MaterialIcon } from "@/components/marketing/material-icon";
@@ -28,7 +28,7 @@ export function SiteHeader() {
     setAuthError("");
 
     try {
-      await signOut(getFirebaseAuth());
+      await signOutAndClearSession(getFirebaseAuth());
       setProfileOpen(false);
       setMenuOpen(false);
     } catch (error) {
