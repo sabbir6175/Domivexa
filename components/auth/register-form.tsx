@@ -8,8 +8,10 @@ import {
   type User,
 } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
-import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { FirebaseConfigurationError, getFirebaseAuth } from "@/lib/firebase";
+import { syncBackendUser } from "@/lib/backend-client";
 import { MaterialIcon } from "@/components/marketing/material-icon";
 
 function getErrorMessage(error: unknown) {
@@ -43,6 +45,7 @@ function getErrorMessage(error: unknown) {
 }
 
 export function RegisterForm() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,12 +54,70 @@ export function RegisterForm() {
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
   const [formError, setFormError] = useState("");
+  const [existingAccountError, setExistingAccountError] = useState(false);
   const [notice, setNotice] = useState("");
   const [verificationUser, setVerificationUser] = useState<User | null>(null);
+  const [emailIsVerified, setEmailIsVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
+  const [checkingVerification, setCheckingVerification] = useState(false);
+  const [verificationCheckKey, setVerificationCheckKey] = useState(0);
+  const verifiedRef = useRef(false);
+
+  useEffect(() => {
+    if (!verificationUser) return;
+    const user = verificationUser;
+
+    let active = true;
+    let checking = false;
+
+    async function checkVerification() {
+      if (checking || (!verifiedRef.current && document.visibilityState === "hidden")) return;
+      checking = true;
+      setVerificationError("");
+
+      try {
+        if (!verifiedRef.current) {
+          await user.reload();
+          if (!active) return;
+          if (!user.emailVerified) return;
+          verifiedRef.current = true;
+          setEmailIsVerified(true);
+        }
+
+        setCheckingVerification(true);
+        const role = await syncBackendUser(user, true);
+        if (active) {
+          router.replace(role === "admin" ? "/admin" : "/dashboard");
+        }
+      } catch (error) {
+        console.error("Could not complete the account after email verification:", error);
+        if (active) {
+          setVerificationError(
+            error instanceof Error
+              ? error.message
+              : "We could not finish setting up your account. Please try again.",
+          );
+        }
+      } finally {
+        checking = false;
+        if (active) setCheckingVerification(false);
+      }
+    }
+
+    void checkVerification();
+    const intervalId = verifiedRef.current
+      ? undefined
+      : window.setInterval(() => void checkVerification(), 3000);
+    return () => {
+      active = false;
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+    };
+  }, [verificationUser, verificationCheckKey, router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
+    setExistingAccountError(false);
     setNotice("");
 
     if (name.trim().length < 2) {
@@ -82,11 +143,13 @@ export function RegisterForm() {
       user = credential.user;
     } catch (error) {
       setFormError(getErrorMessage(error));
+      setExistingAccountError(
+        error instanceof FirebaseError && error.code === "auth/email-already-in-use",
+      );
       setSubmitting(false);
       return;
     }
 
-    setVerificationUser(user);
     let profileWarning = "";
 
     try {
@@ -94,6 +157,18 @@ export function RegisterForm() {
     } catch (error) {
       console.error("Could not save the Firebase account display name:", error);
       profileWarning = "Your account was created, but the display name could not be saved.";
+    }
+
+    try {
+      await syncBackendUser(user, true);
+    } catch (error) {
+      console.error("Could not save the new account in the Express backend:", error);
+      profileWarning = [
+        profileWarning,
+        "Your account was created, but its database profile could not be saved yet. It will be retried when you sign in.",
+      ]
+        .filter(Boolean)
+        .join(" ");
     }
 
     try {
@@ -106,6 +181,7 @@ export function RegisterForm() {
     } finally {
       setSubmitting(false);
     }
+    setVerificationUser(user);
   }
 
   async function resendVerificationEmail() {
@@ -132,11 +208,12 @@ export function RegisterForm() {
           <MaterialIcon name="mark_email_read" className="text-2xl" />
         </span>
         <h2 className="mt-5 font-heading text-2xl font-bold text-[#172b22]">
-          Check your inbox
+          {emailIsVerified ? "Email verified!" : "Check your inbox"}
         </h2>
         <p className="mt-3 leading-7 text-[#59685e]">
-          Your account has been created. Verify your email address to finish
-          setting up your account.
+          {emailIsVerified
+            ? "Your account is verified. Connecting you to your dashboard..."
+            : "Your account has been created. Verify your email address to finish setting up your account."}
         </p>
         <p className="mt-2 break-all font-semibold text-[#176b4d]">
           {verificationUser.email}
@@ -162,15 +239,44 @@ export function RegisterForm() {
             {formError}
           </p>
         )}
-        <button
-          type="button"
-          onClick={resendVerificationEmail}
-          disabled={resending}
-          className="glass-button mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {resending ? "Sending..." : "Resend verification email"}
-          <MaterialIcon name="send" className="text-base" />
-        </button>
+        {verificationError && (
+          <p role="alert" className="mt-4 rounded-xl border border-[#f1d8d2] bg-white p-3 text-sm leading-6 text-[#8b3c2d]">
+            {verificationError}
+          </p>
+        )}
+        {emailIsVerified ? (
+          <button
+            type="button"
+            onClick={() => setVerificationCheckKey((key) => key + 1)}
+            disabled={checkingVerification}
+            className="glass-button mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {checkingVerification ? "Opening dashboard..." : "Continue to dashboard"}
+            <MaterialIcon name={checkingVerification ? "progress_activity" : "arrow_forward"} className="text-base" />
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={resendVerificationEmail}
+              disabled={resending}
+              className="glass-button mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {resending ? "Sending..." : "Resend verification email"}
+              <MaterialIcon name="send" className="text-base" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setVerificationCheckKey((key) => key + 1)}
+              className="mt-4 block text-sm font-semibold text-[#176b4d] underline"
+            >
+              I&apos;ve verified my email — check now
+            </button>
+            <p role="status" aria-live="polite" className="mt-2 text-sm leading-6 text-[#526258]">
+              This page checks for verification automatically.
+            </p>
+          </>
+        )}
       </div>
     );
   }
@@ -178,9 +284,18 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {formError && (
-        <p role="alert" className="rounded-xl border border-[#f1d8d2] bg-[#fff8f6] p-4 text-sm leading-6 text-[#8b3c2d]">
-          {formError}
-        </p>
+        <div role="alert" className="rounded-xl border border-[#f1d8d2] bg-[#fff8f6] p-4 text-sm leading-6 text-[#8b3c2d]">
+          <p>{formError}</p>
+          {existingAccountError && (
+            <p className="mt-2">
+              Already registered?{" "}
+              <Link href="/sign-in" className="font-semibold underline">
+                Sign in to your account
+              </Link>
+              .
+            </p>
+          )}
+        </div>
       )}
 
       <div>

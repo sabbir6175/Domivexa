@@ -1,96 +1,88 @@
 # Domivexa
 
-Domivexa is a Next.js domain-management website preview. Public pages and the
-customer dashboard currently use sample data. Domain availability, purchases,
-payments, and DNS are not connected to live providers.
+Domivexa is a Next.js domain-management website. The customer dashboard uses
+sample data. Public TLD pricing is read from enabled MongoDB pricing records.
+Domain availability, purchases, payments, and DNS are not connected to live
+providers.
 
 ## Run locally
 
-```bash
-npm install
-npm run dev
-```
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env.local` and set your Firebase Web app values,
+   Firebase project ID, and MongoDB connection string.
+3. Run `npm run dev`. This starts the Next.js website on port 3000 and the
+   Express API on port 4000.
+4. Open [http://localhost:3000](http://localhost:3000).
 
-Open [http://localhost:3000](http://localhost:3000).
+Use `npm run backend` to run only the Express API. The API health check is
+available at [http://localhost:4000/api/health](http://localhost:4000/api/health).
 
-## Configure Firebase registration
+## Firebase authentication
 
 1. Create a Firebase project and register a Web app in Firebase Console.
 2. In **Authentication → Sign-in method**, enable **Email/Password**.
 3. In **Authentication → Settings → Authorized domains**, add `localhost` for
    local development and your deployed hostname before production.
-4. Copy `.env.example` to `.env.local` and fill in the Web app config values:
+4. Fill in the `NEXT_PUBLIC_FIREBASE_*` values and `FIREBASE_PROJECT_ID` in
+   `.env.local`. The project ID must match the Firebase Web app project.
+5. Open `/register` to create a customer account. Registration sends an email
+   verification link; verified accounts can sign in at `/sign-in`.
 
-   ```text
-   NEXT_PUBLIC_FIREBASE_API_KEY=
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-   NEXT_PUBLIC_FIREBASE_APP_ID=
-   FIREBASE_PROJECT_ID=
-   ```
+Firebase Web app values with the `NEXT_PUBLIC_` prefix are public browser
+configuration, not secrets. Never put MongoDB credentials in a `NEXT_PUBLIC_`
+variable or client-side code.
 
-5. Install the Google Cloud CLI and authenticate locally with Application
-   Default Credentials:
+## Express and MongoDB
 
-   ```powershell
-   gcloud auth application-default login
-   ```
+Set `MONGODB_URI` to your MongoDB connection string and optionally set
+`MONGODB_DB` (defaults to `domivexa`). Keep these values in `.env.local` for
+local development and in the server's environment settings in production.
+Configure `NEXT_PUBLIC_API_URL` to the Express API's public URL, and
+`FRONTEND_ORIGINS` to a comma-separated list of allowed website origins.
 
-   The signed-in Google account needs permission to use Firebase Authentication
-   in this project. The server uses ADC; no service-account key file is required.
-6. Restart the development server after editing `.env.local`.
-7. Open `/register` and create an account. Firebase Authentication creates the
-   email/password account and sends a verification email.
+When an account is created, the website sends its Firebase ID token to
+`POST /api/auth/sync`. Express verifies the token and upserts the user by
+Firebase UID. This is idempotent: repeat logins update the same record instead
+of inserting another one. New records receive the server-assigned `customer`
+role, and an existing database role is preserved. The API ignores
+client-supplied roles.
 
-These `NEXT_PUBLIC_` values are Firebase Web app configuration and are sent to
-the browser; they are not server secrets. Never put Firebase Admin credentials
-or service-account private keys in these variables or in client code. Restrict
-the Firebase API key to the appropriate web APIs and authorized domains in
-Google Cloud Console. Apply Firebase Authentication email/password policy and
-authorized-domain settings in Firebase Console.
+To grant administrator access, find the user's document in the MongoDB `users`
+collection by `firebaseUid` and change its `role` field to the string `admin`.
+The next verified login loads that role and opens `/admin`; customers open
+`/dashboard`. To revoke administrator access, change the role back to
+`customer`. Role assignment is database-managed and cannot be selected in the
+browser.
 
-Firebase email/password flows are available at `/register`, `/sign-in`,
-`/admin-login`, and `/forgot-password`. Registration sends an email verification
-link; sign-in requires a verified email. Sign-in exchanges the Firebase ID
-token for a five-day, HTTP-only, same-site session cookie. The `/dashboard`
-and `/admin` routes verify that cookie and its revocation status on the server.
-The server reads the account role from Firestore; client-submitted roles and
-Firebase custom claims are not used for dashboard authorization. Any future
-private-data API or admin operation must independently verify the session and
-Firestore role before accessing data or performing the operation.
+The admin panel reads and writes MongoDB collections for users, orders,
+domains, pricing, support tickets, and audit logs. Pricing records use `tld`,
+`registrationPrice`, `renewalPrice`, `transferPrice`, `currency`, `enabled`,
+`effectiveFrom`, and optional `effectiveTo`. Support ticket internal notes and
+customer-visible reply records are stored separately. Customer-visible replies
+are recorded for the support workflow but are not emailed until a notification
+provider is connected.
 
-### Set up admin access
+The public `/pricing` page reads enabled TLD records from `GET /api/pricing`.
+Only records whose effective period includes the current date are listed; an
+empty collection displays an explicit no-pricing state rather than sample rates.
+These are configured base prices, not live registrar quotes.
 
-1. Enable **Cloud Firestore** in Firebase Console.
-2. Publish the repository's `firestore.rules` in **Firestore Database → Rules**.
-   The rules deny all client access to `users` role documents; the trusted
-   server uses Firebase Admin SDK credentials to read them.
-3. Open `/admin-login` and use **Create admin account** to register your email.
-   Verify the address from the link in your inbox.
-4. In Firebase Console, open **Authentication → Users**, find your account,
-   and copy its UID.
-5. In **Firestore Database → Data**, create a collection named `users` and a
-   document whose ID is that UID. Add a string field `role` with value `admin`.
-6. Return to `/admin-login` and sign in. The server checks the Firestore role
-   before granting a session. To remove admin access, change the field to
-   `customer` or delete the document. Role changes are checked on each server
-   request.
+Admin mutation APIs check the caller's current MongoDB role on every request.
+Role/status changes, pricing changes, and support-ticket actions are transactionally
+recorded in `auditLogs` with the actor, action, timestamp, outcome, and sanitized
+metadata. The dashboard integration view reports only configured/healthy
+states, never secret values. Payment/refund and registrar retry buttons remain
+disabled until their providers are implemented and can safely execute those
+operations; existing order/domain references and refund states can still be
+reviewed.
 
-Regular accounts without a role document are treated as customers. Never let
-the browser write a user's `role`; keep the deny rules published. Locally,
-Application Default Credentials must have both Firebase Authentication and
-Firestore access. Production must attach a runtime service identity with the
-corresponding permissions through the hosting platform's workload identity.
-Do not deploy a service-account private key in the application bundle or
-repository. Firebase Web app values in `NEXT_PUBLIC_` variables are public
-configuration, not Admin credentials.
+Firebase sign-in itself still works if MongoDB is unavailable, but the app
+cannot safely choose a role-specific dashboard until the API verifies the
+database role. Registration displays a warning if it cannot save the new
+profile; signing in retries the sync.
 
-The customer dashboard has responsive overview, domain, DNS/nameserver,
-website connection, orders/billing, and profile/security sections. The display
-name can be updated in Firebase Authentication. Domain, DNS, order, and billing
-data are not connected to Firestore or live providers; empty states explain
-which integrations are still required and do not invent customer records.
-The admin interface provides overview, user, domain, order/billing, support,
-and integration sections. These sections show explicit disconnected states
-until their backing services are implemented; Firebase Authentication alone
-does not provide a server-side user directory or admin data access.
+The Express API verifies Firebase ID tokens using Google's public signing keys;
+Firebase Admin SDK credentials and Google Cloud CLI are not required. Domain,
+DNS, registrar, payment, and billing fulfillment remain unavailable until their
+providers are implemented. The admin panel can inspect records already stored
+in MongoDB, but it does not fabricate domain, order, or support data.

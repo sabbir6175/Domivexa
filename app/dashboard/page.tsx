@@ -7,10 +7,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { FirebaseConfigurationError, getFirebaseAuth } from "@/lib/firebase";
-import {
-  createServerSession,
-  signOutAndClearSession,
-} from "@/lib/auth-session";
+import { signOut } from "firebase/auth";
 
 const navigation = [
   { id: "overview", label: "Overview", icon: "grid_view" },
@@ -28,7 +25,6 @@ type DashboardState =
   | { status: "ready"; user: User }
   | { status: "signed-out" }
   | { status: "unverified"; email: string }
-  | { status: "admin-redirect" }
   | { status: "error"; message: string };
 
 function getDashboardError(error: unknown) {
@@ -56,8 +52,6 @@ function getDashboardStatusMessage(state: Exclude<DashboardState, { status: "rea
       return "Redirecting to sign in...";
     case "unverified":
       return `Verify ${state.email} before opening your dashboard. Sign in again after verifying your email.`;
-    case "admin-redirect":
-      return "Opening your administrator dashboard...";
     case "error":
       return state.message;
   }
@@ -177,6 +171,9 @@ export default function DashboardPage() {
     user: authUser,
     error: authError,
     refreshUser,
+    backendSyncError,
+    backendRoleLoading,
+    accountRole,
   } = useAuth();
   const [state, setState] = useState<DashboardState>({ status: "loading" });
   const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
@@ -209,29 +206,34 @@ export default function DashboardPage() {
 
     const user = authUser;
     if (!user) return;
+    if (backendRoleLoading) return;
 
     async function verifyDashboardAccess() {
       try {
         preserveAccessMessage.current = false;
         await user.reload();
-        const idToken = await user.getIdToken(true);
+        await user.getIdToken(true);
         if (!active) return;
 
         if (!user.emailVerified) {
           const email = user.email ?? "";
           preserveAccessMessage.current = true;
           setState({ status: "unverified", email });
-          await signOutAndClearSession(getFirebaseAuth());
+          await signOut(getFirebaseAuth());
           return;
         }
 
-        const session = await createServerSession(idToken);
-        if (!active) return;
-
-        if (session.isAdmin) {
-          preserveAccessMessage.current = true;
-          setState({ status: "admin-redirect" });
+        if (accountRole === "admin") {
           router.replace("/admin");
+          return;
+        }
+        if (accountRole !== "customer") {
+          setState({
+            status: "error",
+            message:
+              backendSyncError ??
+              "We could not verify your account role. Please try signing in again.",
+          });
           return;
         }
 
@@ -249,12 +251,20 @@ export default function DashboardPage() {
     return () => {
       active = false;
     };
-  }, [authStatus, authError, authUser, router]);
+  }, [
+    authStatus,
+    authError,
+    authUser,
+    backendRoleLoading,
+    accountRole,
+    backendSyncError,
+    router,
+  ]);
 
   async function handleSignOut() {
     setSigningOut(true);
     try {
-      await signOutAndClearSession(getFirebaseAuth());
+      await signOut(getFirebaseAuth());
       router.replace("/sign-in");
     } catch (error) {
       setState({ status: "error", message: getDashboardError(error) });
@@ -303,25 +313,27 @@ export default function DashboardPage() {
                   ? "progress_activity"
                   : state.status === "unverified"
                     ? "mark_email_unread"
-                    : state.status === "admin-redirect"
-                      ? "progress_activity"
-                      : "error"
+                    : "error"
               }
             />
           </span>
           <h1 className="mt-5 font-heading text-2xl font-bold">
             {state.status === "unverified"
               ? "Verify your email"
-              : state.status === "admin-redirect"
-                ? "Admin dashboard"
-                : state.status === "error"
-                  ? "Account unavailable"
-                  : "Your dashboard"}
+              : state.status === "error"
+                ? "Account unavailable"
+                : "Your dashboard"}
           </h1>
           <p className="mt-3 text-sm leading-7 text-[#68766d]">
             {getDashboardStatusMessage(state)}
           </p>
-          {state.status !== "loading" && state.status !== "signed-out" && state.status !== "admin-redirect" && (
+          {backendSyncError && (
+            <Notice tone="warning">
+              Your sign-in succeeded, but the backend could not save your
+              customer profile: {backendSyncError}
+            </Notice>
+          )}
+          {state.status !== "loading" && state.status !== "signed-out" && (
             <Link
               href="/sign-in"
               className="glass-button mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white"
@@ -837,7 +849,7 @@ export default function DashboardPage() {
             </section>
             <section className="rounded-2xl border border-[#e5ece6] bg-white p-5 sm:p-6">
               <h2 className="font-heading text-sm font-bold">Role & access</h2>
-              <p className="mt-2 text-xs leading-6 text-[#7b887e]">Your dashboard role is assigned by the platform. Admin and support access cannot be selected in your profile.</p>
+              <p className="mt-2 text-xs leading-6 text-[#7b887e]">Your customer role is managed securely by the backend.</p>
               <Notice tone="info">Customer access only</Notice>
             </section>
           </div>
@@ -932,6 +944,14 @@ export default function DashboardPage() {
 
           <section className="min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-9 xl:px-10">
             <div className="mx-auto max-w-[1320px]">
+              {backendSyncError && (
+                <div className="mb-5">
+                  <Notice tone="warning">
+                    Your sign-in succeeded, but the backend could not save your
+                    customer profile: {backendSyncError}
+                  </Notice>
+                </div>
+              )}
               <div className="mb-5 flex items-center justify-between gap-3">
                 <p className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#789080]">
                   <Icon name={selectedNavigation?.icon ?? "grid_view"} className="text-base text-[#25865e]" />

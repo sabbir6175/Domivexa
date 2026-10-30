@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { signOutAndClearSession } from "@/lib/auth-session";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { MaterialIcon } from "@/components/marketing/material-icon";
+import { signOut } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase";
 
 const navigation = [
@@ -20,15 +20,16 @@ export function SiteHeader() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [authError, setAuthError] = useState("");
-  const { status, user } = useAuth();
+  const { status, user, accountRole } = useAuth();
   const signedOut = status === "signed-out" || status === "error";
+  const dashboardHref = accountRole === "admin" ? "/admin" : "/dashboard";
 
   async function handleSignOut() {
     setSigningOut(true);
     setAuthError("");
 
     try {
-      await signOutAndClearSession(getFirebaseAuth());
+      await signOut(getFirebaseAuth());
       setProfileOpen(false);
       setMenuOpen(false);
     } catch (error) {
@@ -64,7 +65,7 @@ export function SiteHeader() {
             Services
           </Link>
           {status === "authenticated" && user && (
-            <Link href="/dashboard" className="transition-colors hover:text-[#176b4d]">
+            <Link href={dashboardHref} className="transition-colors hover:text-[#176b4d]">
               Dashboard
             </Link>
           )}
@@ -122,7 +123,7 @@ export function SiteHeader() {
                     </p>
                   )}
                   <Link
-                    href="/dashboard"
+                    href={dashboardHref}
                     role="menuitem"
                     onClick={() => setProfileOpen(false)}
                     className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[#344b3b] hover:bg-[#f4f8f2]"
